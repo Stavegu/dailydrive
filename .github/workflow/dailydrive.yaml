@@ -1,0 +1,45 @@
+name: Refresh Daily Drive
+on:
+  schedule:
+    #  Runs at 04:00 UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch: 
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    env:
+      # This tells GitHub to use the 2026 Node 24 engine immediately
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6 # Updated to v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6 # Updated to v6
+        with:
+          node-version: '24' # Updated to Node 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Create Config and Token Files
+        shell: bash
+        run: |
+          # Write the config.yaml
+          cat <<'EOF' > config.yaml
+          ${{ secrets.CONFIG_YAML }}
+          EOF
+          # Create the .spotify-token.json file with your secret
+          echo '{
+            "access_token": "initial_dummy_token",
+            "refresh_token": "${{ secrets.SPOTIFY_REFRESH_TOKEN }}",
+            "expires_at": 1000
+          }' > .spotify-token.json
+          # Create a blank state.json
+          echo "{}" > state.json
+      - name: Run Script
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+        run: npm start
