@@ -3,11 +3,20 @@ on:
   schedule:
     #  Runs at 04:00 UTC
     - cron: '0 4 * * *'
+      timezone: 'Europe/Paris'
+  
   workflow_dispatch: 
 
 jobs:
   refresh:
+    name: Refresh ${{ matrix.environment }}
     runs-on: ubuntu-latest
+    environment: ${{ matrix.environment }}
+    strategy:
+      matrix:
+        environment:
+          - daily1
+          - daily2
     env:
       # This tells GitHub to use the 2026 Node 24 engine immediately
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
