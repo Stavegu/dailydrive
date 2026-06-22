@@ -144,11 +144,19 @@ async function fetchPodcastEpisodes(spotifyApi, podcasts) {
     try {
       // Ask Spotify for the most recent episodes of this show
       const data = await spotifyApi.getShowEpisodes(podcast.id, {
-        limit: count,
-        market: "US", // Required for episode availability
+        // Spotify returns max 50 top tracks per request so limit it
+        limit: Math.min(count, 50),
+        market: "FR", // Required for episode availability
       });
 
       for (const episode of data.body.items) {
+        // skip fully played podcasts
+        if (podcast.skip_fully_played && episode.resume_point.fully_played) {
+          console.log(`    🧹 ${episode.name} skipped (fully played)`);
+          continue;
+        }
+        
+        // Push a episode which is not fully played
         episodes.push({
           uri: episode.uri,      // Spotify URI like "spotify:episode:abc123"
           name: episode.name,
@@ -157,6 +165,11 @@ async function fetchPodcastEpisodes(spotifyApi, podcasts) {
           position: podcast.position || null, // "first" = pinned to top of playlist
         });
         console.log(`    📌 ${episode.name}`);
+        
+        if (podcast.skip_fully_played) {
+          // Accept only one episode per show
+          break;
+        }
       }
     } catch (err) {
       // Don't crash if one podcast fails — just warn and continue with the rest
@@ -246,33 +259,33 @@ async function fetchMusicTracks(spotifyApi, musicConfig) {
     const count = musicConfig.top_tracks.count || 30;
     console.log(`🎵 Fetching top tracks (${timeRange})...`);
 
-    try {
-      let offset = 0;
-      let remaining = count;
+      try {
+        let offset = 0;
+        let remaining = count;
 
-      // Spotify returns max 50 top tracks per request, so paginate if needed
-      while (remaining > 0) {
-        const limit = Math.min(remaining, 50);
+        // Spotify returns max 50 top tracks per request, so paginate if needed
+        while (remaining > 0) {
+          const limit = Math.min(remaining, 50);
         const data = await spotifyApi.getMyTopTracks({ limit, offset, time_range: timeRange });
 
-        for (const track of data.body.items) {
-          allTracks.push({
-            uri: track.uri,
-            name: track.name,
-            artist: track.artists?.map((a) => a.name).join(", ") || "Unknown",
-            type: "track",
-          });
+          for (const track of data.body.items) {
+            allTracks.push({
+              uri: track.uri,
+              name: track.name,
+              artist: track.artists?.map((a) => a.name).join(", ") || "Unknown",
+              type: "track",
+            });
+          }
+
+          // If we got fewer tracks than requested, there are no more
+          if (data.body.items.length < limit) break;
+          offset += limit;
+          remaining -= limit;
         }
 
-        // If we got fewer tracks than requested, there are no more
-        if (data.body.items.length < limit) break;
-        offset += limit;
-        remaining -= limit;
-      }
-
-      console.log(`    Found ${allTracks.length} tracks from top tracks`);
-    } catch (err) {
-      console.error(`    ⚠️  Failed to fetch top tracks: ${err.message}`);
+        console.log(`    Found ${allTracks.length} tracks from top tracks`);
+      } catch (err) {
+        console.error(`    ⚠️  Failed to fetch top tracks: ${err.message}`);
     }
   }
 

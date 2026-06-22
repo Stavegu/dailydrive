@@ -44,9 +44,11 @@ podcasts:
     episodes: 1
     position: first         # Always plays first, before the mix pattern
 
+  # Request 10 episodes and select the first one that is not yet finished
   - name: "Freakonomics Radio"
     id: "6z4NLXyHPga1UmSJsPK7G1"
-    episodes: 1
+    episodes: 10
+    skip_fully_played: true
 
   - name: "The Daily"
     id: "3IM0lmZxpFAY7CwMuv9H4g"

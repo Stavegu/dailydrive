@@ -58,6 +58,7 @@ const SCOPES = [
   "user-library-read",
   "user-read-private",
   "user-read-recently-played",
+  "user-read-playback-position",
   "user-top-read",
 ];
 
